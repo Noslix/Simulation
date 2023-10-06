@@ -73,7 +73,7 @@ nb_meilleurs_bots = 10
 taux_mutation = 0.1
 
 
-def demarrage(actions, nb_generations : int, population_taille : int):
+def demarrage(self, actions : str, nb_generations : int, population_taille : int):
     # Création de la population initiale
     population = creation_population(population_taille)
 

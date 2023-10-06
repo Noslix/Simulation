@@ -2,11 +2,6 @@
 import GeneticAlgo
 import matplotlib.pyplot as plt
 
-# Lecture des valeurs de l'action depuis un fichier
-actions = []
-with open('donnees_random.txt', 'r') as file:
-    for line in file:
-        actions.append(float(line.strip()))  # Convertir les valeurs en float et les ajouter à la liste
 
 '''
 vente_deficitMax = 0.1  # 10% de perte maximale
@@ -18,8 +13,9 @@ achat_diffB = 10 #% de Rehausse
 
 #final_portefeuille, portefeuille_history = Simulation.simulate_trading(actions, 10, -3, 6, vente_deficitMax, vente_gainMax, 10)
 
-#Faire en sorte que le action fasse un appel au lieu de garder toutes les données dans la variable
-GeneticAlgo.demarrage(actions, 1, 10)
+nom_action = "BTC"
+
+GeneticAlgo.demarrage(nom_action, 1, 10)
 
 '''
 # Afficher la courbe de l'évolution du solde
