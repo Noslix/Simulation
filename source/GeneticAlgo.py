@@ -3,25 +3,26 @@ import Simulation
 
 from typing import List
 from Bot import bot
+from Simulation import Simulation
 
 
-actions = [1,2,3,4,5,6,7,8,9,8,7,5,3,1,1,3,4,6,7,9]
+#actions = [1,2,3,4,5,6,7,8,9,8,7,5,3,1,1,3,4,6,7,9]
 taux_mutation = 1.1 #test temporaire
 
-# Fonction d'évaluation d'un bot
-def evaluation_bot(bot):
-    vente_deficitMax, vente_gainMax = bot
-    portefeuille_final = Simulation.simulate_trading(actions, 10, -3, 6, vente_deficitMax, vente_gainMax, 10)
-    return portefeuille_final
 
 # Fonction de création d'une population initiale
 def creation_population(population_taille : int) -> List[bot]:
     population = []
-    for _ in range(population_taille):
-        vente_deficitMax = random.uniform(0.01, 0.2)  # Valeurs aléatoires pour StopLoss entre 1% et 20%
-        vente_gainMax = random.uniform(0.05, 0.3)  # Valeurs aléatoires pour TakeProfit entre 5% et 30%
-        bot = (vente_deficitMax, vente_gainMax)
-        population.append(bot)
+    for i in range(population_taille):
+        nouveau_bot = bot(0)
+        nouveau_bot.SetAchat_delta(random.uniform(0.01, 1))
+        nouveau_bot.SetAchat_deficit_p100(random.uniform(0.01, 1))
+        nouveau_bot.SetAchat_rehausse_p100(random.uniform(0.01, 1))
+        nouveau_bot.SetVente_deficitMax(random.uniform(0.01, 1))  # Valeurs aléatoires pour StopLoss entre 1% et 100%
+        nouveau_bot.SetVente_gainMax(random.uniform(0.01, 1))  # Valeurs aléatoires pour TakeProfit entre 1% et 100%
+        nouveau_bot.SetPourcent_ajustement(random.uniform(-1, 1))
+        population.append(nouveau_bot)
+
     return population
 
 
@@ -67,27 +68,32 @@ def Incubation(bot_parent1, bot_parent2):
 
 
 # Paramètres de l'algorithme génétique
-population_taille = 100
+#population_taille = 100
 nb_generations = 50
 nb_meilleurs_bots = 10
 taux_mutation = 0.1
 
 
-def demarrage(actions, nb_generations : int, population_taille : int):
+'''
+Permet le lancement de l'algorithme genetique.
+'''
+
+def demarrage(actions : str, nb_generations : int, population_taille : int):
+
+
     # Création de la population initiale
     population = creation_population(population_taille)
+
+    #NOTE : Créer une classe Simulation en fonction du type de courbe.
+    maSimulation = Simulation(actions)
 
     # Boucle d'évolution sur plusieurs générations
     for generation in range(nb_generations):
 
-        # Mise en Situation des bots
         for i in range(len(population)) :
-            population[i] = Simulation.simulate_trading(actions, population[i])
+            population[i] = maSimulation.simulate_trading(population[i])
 
-        # Sélection des meilleurs bots
         meilleurs_bots = selection_meilleurs_bots(population, nb_meilleurs_bots)
-
-        # Création de la nouvelle génération par croisement et mutation
         nouvelle_population = meilleurs_bots.copy()
 
         while len(nouvelle_population) < population_taille:
@@ -95,7 +101,6 @@ def demarrage(actions, nb_generations : int, population_taille : int):
             enfant1, enfant2 = Incubation(parent1, parent2)
             nouvelle_population.extend([enfant1, enfant2])
 
-        # Remplacement de l'ancienne population par la nouvelle
         population = nouvelle_population
 
 

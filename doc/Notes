@@ -5,3 +5,7 @@ TODO LIST
 - Concevoir un graphique capable d'afficher les courbes
 - Créer une fonction selon les parametres suivants:
     Achat (struct contenant le temps en h et le %)
+
+
+# NOTE : Créer une classe de Simulation qui permet de créer un objet definissant le type de courbe. exemple 'APPL'
+   
