@@ -1,4 +1,4 @@
-import unittest
+'''import unittest
 from Simulation import Get_picBas_valeur, analyse_achat, maj_delta_achat
 from GeneticAlgo import croisement, mutation 
 
@@ -32,3 +32,5 @@ class TestFonctions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    '''

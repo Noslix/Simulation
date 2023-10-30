@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "C:/Users/bourg/OneDrive/Documents/#1_SEMI_PRO/INVESTISSEMENT/Simulation/source/main.py",
+        // ... d'autres configurations
+      }
+    ]
+  }

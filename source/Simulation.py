@@ -1,5 +1,6 @@
 import pandas as pd
 from Bot import bot
+from typing import List
 from collections import deque
 
 # NOTE : Créer une classe de Simulation qui permet de créer un objet definissant le type de courbe. exemple 'APPL'
@@ -20,19 +21,15 @@ from collections import deque
 class Simulation:
 
     # CONSTRUCTEUR
-    def __init__(self, Action : 'str'):
+    def __init__(self, Actions : List[float]):
         # contenu qui defini l'attribut des données en Bourses en fonction du symbole (ex APPL)
         
-        NomFichier = 'stock_data_' + Action + '.csv'
-        CheminFichier = 'Courbes/'
+        
+        self.donneesBoursieres = Actions
+        self.montant_achat = 50
+        self.portefeuille = 0
+        self.prix_action_achat = 0
 
-        dataframe = pd.read_csv(CheminFichier+NomFichier)
-        self.date = dataframe['Date']
-        self.ouverture = dataframe['Open'].astype(float)
-        self.fermeture = dataframe['Close'].astype(float)
-        self.volume = dataframe['Volume'].astype(float)
-
-        print(self.volume)
 
         # FAIRE QUE LE FICHIER AILLE DANS LE BON NOM PAR EXEMPLE APPL.txt
         # SELECTION DE LA COLONNE ?!? COMMENT ??
@@ -47,53 +44,50 @@ class Simulation:
         
         # On defini les parametres du bot
         achat_delta = bot_choisi.GetAchat_delta()
-        achat_deficit_p100 = bot_choisi.GetAchat_deficit_p100()
-        achat_rehausse_p100 = bot_choisi.GetAchat_rehausse_p100()
-        vente_deficitMax = bot_choisi.GetVente_deficitMax()
-        vente_gainMax = bot_choisi.GetVente_gainMax()
-        pourcent_ajustement = bot_choisi.GetPourcent_ajustement()
-        portefeuille = bot_choisi.GetGain()
+        self.achat_deficit_p100 = bot_choisi.GetAchat_deficit_p100()
+        self.achat_rehausse_p100 = bot_choisi.GetAchat_rehausse_p100()
+        vente_deficitMax = bot_choisi.GetVente_deficitMax_p100()
+        vente_gainMax = bot_choisi.GetVente_gainMax_p100()
+        self.pourcent_ajustement = bot_choisi.GetPourcent_ajustement()
+        self.portefeuille = bot_choisi.GetGain_USD()
+
+        self.prix_action_achat = 0
+        delta_actions = deque()
+        self.portefeuille_initial = 100  # Montant initial
+        self.portefeuille = self.portefeuille_initial
+        self.portefeuille_history = [self.portefeuille]       
 
         
-        actions_detenues = 0
-        prix_action = 1 #defaut 1€ 
-        delta_actions = deque()
-        portefeuille_initial = 10000  # Montant initial
-        portefeuille = portefeuille_initial
-        #portefeuille_history = [portefeuille]       
 
-        valeursActions = self.volume
-
-        for prix_actuel in valeursActions :
+        for prix_actuel in self.donneesBoursieres :
             
+            
+
             delta_actions = self.maj_delta_achat(delta_actions, achat_delta, prix_actuel)
-            achat_deficit_p100, achat_rehausse_p100 = self.analyse_achat(delta_actions)
+            autorisationAchat = self.analyse_achat(delta_actions)
 
-            # Si nous n'avons pas d'actions, achetons si le prix est bas
-            if actions_detenues == 0:  
-                self.Achat_Action(portefeuille, actions_detenues, prix_actuel)
+            difference_p100 = self.Resultat_Gain_p100(prix_actuel)
+
+            # ACHAT
+            if (self.prix_action_achat == 0) and autorisationAchat  :  
+                self.montant_achat = self.portefeuille
+                self.Achat_Action(prix_actuel)
                 
-            # Si le prix a augmenté suffisamment, vendons
-            if (prix_actuel - prix_action) / prix_action >= vente_gainMax:  
-                self.Revente_Action_Deficit(portefeuille, actions_detenues, prix_actuel)
+            # REVENTE GAIN
+            elif (difference_p100 >= vente_gainMax) and (self.prix_action_achat != 0) :
+                self.Revente_Action(prix_actuel)
 
-            # Si le prix a baissé trop, vendons pour limiter les pertes
-            if (prix_action - prix_actuel) / prix_action >= vente_deficitMax:  
-                self.Revente_Action_Gain(portefeuille, actions_detenues, prix_actuel)
-            
-            #portefeuille_history.append(portefeuille)  # Ajouter le solde actuel à l'historique
-            print({portefeuille})
+            # REVENTE DEFICIT
+            elif (difference_p100 <= vente_deficitMax) and (self.prix_action_achat != 0) :
+                self.Revente_Action(prix_actuel)
+                
+            self.portefeuille_history.append(self.portefeuille)
 
-        # NOTE : Dois s'arreter avant la fin et non revendre par défaut a nimporte quel moment.
-        # Vendre toutes les actions restantes à la fin de la simulation
-        portefeuille += actions_detenues * valeursActions[-1]
-        actions_detenues = 0
-        #portefeuille_history.append(portefeuille)  # Ajouter le solde final à l'historique
-
-        bot_choisi.SetGain(portefeuille)
+        self.portefeuille_history.pop() # La derniere valeur est en trop
+        bot_choisi.SetGain_USD(self.portefeuille)
+        bot_choisi.SetPortefeuilleHistory(self.portefeuille_history)
 
         return bot_choisi
-
 
     # On adapte le delta d'achat
     def maj_delta_achat(self, delta_actions, achat_delta, prix_actuel) :
@@ -106,10 +100,20 @@ class Simulation:
     # On determine le taux de deficit et de gain à partir du niveau le plus bas selon le delta temps défini
     def analyse_achat(self, delta_actions) :
         pic_bas = self.Get_picBas_valeur(delta_actions)
-        achat_deficit_p100 = round(pic_bas/delta_actions[0],2)-1
-        achat_rehausse_p100 = round(delta_actions[-1]/pic_bas,2)-1
+        achat_deficit_p100_reel = round(pic_bas/delta_actions[0],2)-1
+        achat_rehausse_p100_reel = round(delta_actions[-1]/pic_bas,2)-1
 
-        return achat_deficit_p100, achat_rehausse_p100
+        deficitOK = self.EstProche(achat_deficit_p100_reel,
+                              self.achat_deficit_p100,
+                              self.pourcent_ajustement)
+        
+        rehausseOK = self.EstProche(achat_rehausse_p100_reel,
+                              self.achat_rehausse_p100,
+                              self.pourcent_ajustement)
+
+        validAchat = deficitOK and rehausseOK
+
+        return validAchat
 
     # Determine la valeur du pic le plus bas du delta temps
     def Get_picBas_valeur(self, delta_actions) :
@@ -118,17 +122,44 @@ class Simulation:
             if delta_action <= pic_bas:
                 pic_bas = delta_action
         return pic_bas
+
+    def Montant_revente(self, prix_actuel : float) :
+        return self.montant_achat * (prix_actuel / self.prix_action_achat)    
         
-    def Achat_Action(self, portefeuille, actions_detenues, prix_actuel):
-        prix_action = prix_actuel
-        nb_actions_a_acheter = 10#int(portefeuille / prix_action)
-        portefeuille -= nb_actions_a_acheter * prix_action
-        actions_detenues += nb_actions_a_acheter
+    def Achat_Action(self, prix_actuel):
+        self.portefeuille -= self.montant_achat
+        self.prix_action_achat = prix_actuel
 
-    def Revente_Action_Deficit(self, portefeuille, actions_detenues, prix_actuel):
-        portefeuille += actions_detenues * prix_actuel
-        actions_detenues = 0
+    def Revente_Action(self, prix_actuel):
+        self.portefeuille += self.montant_achat * (prix_actuel / self.prix_action_achat)
+        self.prix_action_achat = 0
 
-    def Revente_Action_Gain(self, portefeuille, actions_detenues, prix_actuel):
-        portefeuille += actions_detenues * prix_actuel
-        actions_detenues = 0
+    # Défini le resultat du gain en % positif ou négatif
+    def Resultat_Gain_p100(self, prix_actuel : float):
+        if (self.prix_action_achat != 0) :
+            val = ((prix_actuel / self.prix_action_achat)-1)*100
+        else :
+            val = 0
+        return val
+    '''
+    def EstProche(self, val1_p100 : float, val2_p100 : float, tolerance_p100):
+        val = abs(val1_p100 - val2_p100) <= tolerance_p100
+        return val
+    '''
+
+
+
+    def EstProche(self, val1, val2, tolerance):
+        if val1 == 0 and val2 == 0:
+            resultat = True  # Les deux valeurs sont exactement zéro, donc elles sont proches
+        elif val1 == 0 or val2 == 0:
+            resultat = False  # L'une des valeurs est zéro mais pas l'autre, donc elles ne sont pas proches
+        else :
+            # Calculer la différence relative en pourcentage
+            difference = abs(val1 - val2)
+            avg = (val1 + val2) / 2
+            relative_difference_percent = (difference / avg)
+            resultat = relative_difference_percent <= tolerance
+
+        return resultat
+

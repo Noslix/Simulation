@@ -20,27 +20,16 @@ achat_diffB = 10 #% de Rehausse
 #final_portefeuille, portefeuille_history = Simulation.simulate_trading(actions, 10, -3, 6, vente_deficitMax, vente_gainMax, 10)
 
 actions = 'AAPL'
-nb_generation = 1
-Population_taille = 10
-
+nb_generation = 100
+Population_taille = 50
 
 
 
 #Faire en sorte que le action fasse un appel au lieu de garder toutes les données dans la variable
 GeneticAlgo.demarrage(actions, nb_generation, Population_taille)
 
-'''
-# Afficher la courbe de l'évolution du solde
-#plt.plot(range(len(actions)), actions, label='Bourse', color='blue')
-plt.plot(range(len(portefeuille_history)), portefeuille_history, label='actions_detenues', color='red')
-plt.xlabel('Jours')
-plt.ylabel('Solde')
-plt.title('Évolution du solde au fil du temps')
-plt.grid(True)
-'''
-
 # Sauvegarder la courbe dans un fichier
 #plt.savefig('solde_evolution.png')
 
 # Afficher la courbe
-plt.show()
+#plt.show()
